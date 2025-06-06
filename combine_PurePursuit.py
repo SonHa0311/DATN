@@ -9,10 +9,10 @@ dt = 0.1  # Discrete time step (seconds)
 # Vehicle parameters (meters)
 LENGTH = 43
 WIDTH = 21
-BACKTOWHEEL = 15
+BACKTOWHEEL = 8
 WHEEL_LEN = 6
-WHEEL_WIDTH = 2.2
-TREAD = 16
+WHEEL_WIDTH = 2.5
+TREAD = 20
 WB = 25
 
 # Define the vehicle class
@@ -108,7 +108,7 @@ def receive_feedback(sock):
 # Function to control the vehicle forward
 def control_forward(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
     # Control logic for forward movement
-    while getDistance([ego.x, ego.y], goal) > 10:  # Loop until the vehicle is within 1 meter of the goal
+    while getDistance([ego.x, ego.y], goal) > 5:  # Loop until the vehicle is within 1 meter of the goal
         # Calculate target point for look ahead
         target_point = traj.getTargetPoint([ego.x, ego.y])
 
@@ -140,7 +140,7 @@ def control_forward(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
         delta = max(-math.radians(30), min(math.radians(30), delta))
 
         # Check if the vehicle has reached the goal (within a 1-meter threshold)
-        if getDistance([ego.x, ego.y], goal) <= 10:
+        if getDistance([ego.x, ego.y], goal) <= 5:
             print("Xe đã đến điểm cuối. Dừng lại. \n")
             ego.vel = 0  # Set velocity to 0 to stop the vehicle
             delta = 0  # Ensure the steering angle is also set to 0
@@ -157,7 +157,7 @@ def control_forward(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
 # Function to control the vehicle reverse (lùi)
 def control_reverse(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
     # Control logic for reverse movement
-    while getDistance([ego.x, ego.y], goal) > 10:  # Loop until the vehicle is within 1 meter of the goal
+    while getDistance([ego.x, ego.y], goal) > 5:  # Loop until the vehicle is within 1 meter of the goal
         # Calculate target point for look ahead
         target_point = traj.getTargetPoint([ego.x, ego.y])
 
@@ -193,7 +193,7 @@ def control_reverse(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
         delta = max(-math.radians(30), min(math.radians(30), delta))
 
         # Check if the vehicle has reached the goal (within a 1-meter threshold)
-        if getDistance([ego.x, ego.y], goal) <= 10:
+        if getDistance([ego.x, ego.y], goal) <= 5:
             print("Xe đã đến điểm cuối. Dừng lại.", end='\n')
             ego.vel = 0  # Set velocity to 0 to stop the vehicle
             delta = 0  # Ensure the steering angle is also set to 0
@@ -321,7 +321,7 @@ def control():
     
     # Create a new socket to send control data to another TCP server
     Ctrl_IP = "192.168.1.137"
-    Ctrl_PORT = 5001
+    Ctrl_PORT = 5003
     # Ctrl_IP = "127.0.0.1"
     # Ctrl_PORT = 5002
     try:

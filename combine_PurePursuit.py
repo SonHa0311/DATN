@@ -4,7 +4,7 @@ import socket
 import numpy as np
 
 L = 18  # Look ahead distance in meters
-dt = 0.1  # Discrete time step (seconds)
+dt = 0.07  # Discrete time step (seconds)
 
 # Vehicle parameters (meters)
 LENGTH = 43
@@ -17,7 +17,7 @@ WB = 25
 
 # Define the vehicle class
 class Vehicle:
-    def __init__(self, x, y, yaw, vel=10, max_steering_angle_deg=30):  # Default for forward movement
+    def __init__(self, x, y, yaw, vel=10, max_steering_angle_deg=35):  # Default for forward movement
         self.x = x
         self.y = y
         self.yaw = yaw
@@ -105,10 +105,19 @@ def receive_feedback(sock):
         print(f"Lỗi khi nhận dữ liệu: {e}", end='\n')
         return None, None, None
 
-# Function to control the vehicle forward
+def pure_pursuit_control(vehicle, target_point):
+    dx = target_point[0] - vehicle.x
+    dy = target_point[1] - vehicle.y
+    alpha = math.atan2(dy, dx) - vehicle.yaw
+    alpha = (alpha + math.pi) % (2 * math.pi) - math.pi  # normalize to [-pi, pi]
+    Lf = L
+    delta = math.atan2(2 * WB * math.sin(alpha), Lf)
+    delta = max(-vehicle.max_steering_angle, min(vehicle.max_steering_angle, delta))
+    return delta
+
 def control_forward(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
     # Control logic for forward movement
-    while getDistance([ego.x, ego.y], goal) > 5:  # Loop until the vehicle is within 1 meter of the goal
+    while getDistance([ego.x, ego.y], goal) > 3:  # Loop until the vehicle is within 1 meter of the goal
         # Calculate target point for look ahead
         target_point = traj.getTargetPoint([ego.x, ego.y])
 
@@ -116,7 +125,7 @@ def control_forward(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
         ego.x, ego.y, ego.yaw = receive_feedback(client_socket)
 
         if ego.x is None:  # If no valid feedback is received, continue with the loop
-            print("Không nhận được dữ liệu feedback, tiếp tục. \n")
+            print("Không nhận được dữ liệu feedback, tiếp tục.")
             continue
 
         print(f"[FEEDBACK FORWARD] X: {ego.x:.2f}, Y: {ego.y:.2f}, Yaw: {ego.yaw:.2f} \n")
@@ -135,13 +144,14 @@ def control_forward(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
         if abs(yaw_err) < 0.05:  # Tolerance threshold for yaw error
             delta = 0
         else:
-            delta = PI_yaw.control(yaw_err)
+            delta = pure_pursuit_control(ego, target_point)
 
+        # Ensure delta is within the allowed range [-30, 30] degrees
         delta = max(-math.radians(30), min(math.radians(30), delta))
 
         # Check if the vehicle has reached the goal (within a 1-meter threshold)
-        if getDistance([ego.x, ego.y], goal) <= 5:
-            print("Xe đã đến điểm cuối. Dừng lại. \n")
+        if getDistance([ego.x, ego.y], goal) <= 3:
+            print("Xe đã đến điểm cuối. Dừng lại.")
             ego.vel = 0  # Set velocity to 0 to stop the vehicle
             delta = 0  # Ensure the steering angle is also set to 0
 
@@ -149,15 +159,15 @@ def control_forward(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
         send_control_command(new_sock, ego.vel, delta)
 
         # Print current target point, velocity and steering angle
-        print(f"Target Point: {target_point} \n")
-        print(f"Current Velocity: {ego.vel} cm/s \n")
-        print(f"Steering Angle: {math.degrees(delta):.2f} degrees \n")
+        print(f"Target Point: {target_point}")
+        print(f"Current Velocity: {ego.vel} cm/s")
+        print(f"Steering Angle: {math.degrees(delta):.2f} degrees")
 
 
 # Function to control the vehicle reverse (lùi)
 def control_reverse(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
     # Control logic for reverse movement
-    while getDistance([ego.x, ego.y], goal) > 5:  # Loop until the vehicle is within 1 meter of the goal
+    while getDistance([ego.x, ego.y], goal) > 3.0:  # Loop until the vehicle is within 1 meter of the goal
         # Calculate target point for look ahead
         target_point = traj.getTargetPoint([ego.x, ego.y])
 
@@ -187,13 +197,14 @@ def control_reverse(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw):
         if abs(yaw_err) < 0.05:  # Tolerance threshold for yaw error
             delta = 0
         else:
-            delta = PI_yaw.control(yaw_err) * -1
+            # delta = PI_yaw.control(yaw_err) * -1
+            delta = pure_pursuit_control(ego, target_point) 
 
         # Ensure delta is within the allowed range [-30, 30] degrees
         delta = max(-math.radians(30), min(math.radians(30), delta))
 
         # Check if the vehicle has reached the goal (within a 1-meter threshold)
-        if getDistance([ego.x, ego.y], goal) <= 5:
+        if getDistance([ego.x, ego.y], goal) <= 3.0:
             print("Xe đã đến điểm cuối. Dừng lại.", end='\n')
             ego.vel = 0  # Set velocity to 0 to stop the vehicle
             delta = 0  # Ensure the steering angle is also set to 0
@@ -289,6 +300,7 @@ def vehicle_move(traj_data, client_socket, new_sock, forward=True):
         control_reverse(new_sock, client_socket, traj, goal, ego, PI_acc, PI_yaw)
 
 def control():
+    global x, y, yaw
     # Load trajectory from file
     json_file = "path_data.json"
     traj_data = load_trajectory_from_file(json_file)
@@ -314,6 +326,8 @@ def control():
             x, y, yaw = map(float, data.split(","))
             ego = Vehicle(x, y, yaw)
             print(f"[FEEDBACK INITIAL] X: {ego.x:.2f}, Y: {ego.y:.2f}, Yaw: {ego.yaw:.2f}", end='\n')
+            # print(f"[FEEDBACK INITIAL] X: {x:.2f}, Y: {y:.2f}, Yaw: {yaw:.2f}", end='\n')
+
         
     except Exception as e:
         print(f"Lỗi kết nối TCP: {e}", end='\n')
@@ -321,7 +335,7 @@ def control():
     
     # Create a new socket to send control data to another TCP server
     Ctrl_IP = "192.168.1.137"
-    Ctrl_PORT = 5003
+    Ctrl_PORT = 5004
     # Ctrl_IP = "127.0.0.1"
     # Ctrl_PORT = 5002
     try:

@@ -8,7 +8,7 @@ from combine_PurePursuit import control
 import time
 
 TCP_IP = "127.0.0.1"
-TCP_PORT = 5013
+TCP_PORT = 5014
 BUFFER_SIZE = 1024
 
 # Initialize start position variables
@@ -51,7 +51,8 @@ def main():
     s = [x_start, y_start, np.deg2rad(yaw_start)]
     
     # Set goal position
-    g = [220, 130, np.deg2rad(-89)]
+    g = [287, 73, np.deg2rad(90)]
+    # g = [300, 130, np.deg2rad(0)]
     
     # Run the path planning and control
     run(s, g, mapParameters, plt)

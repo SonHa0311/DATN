@@ -11,7 +11,7 @@ import json
 import socket
 
 class Car:
-    maxSteerAngle = np.deg2rad(30)
+    maxSteerAngle = np.deg2rad(20)
     steerPresion = 10
     wheelBase = 25
     axleToFront = 28
@@ -426,6 +426,7 @@ def create_map():
         obstacleX.append(i)
         obstacleY.append(158)
     for i in range(248, 408):
+    # for i in range(248, 300):    
         obstacleX.append(i)
         obstacleY.append(158)
     
@@ -634,7 +635,7 @@ def drawCar(x, y, yaw, color='black'):
 
 
 TCP_IP = "127.0.0.1"
-TCP_PORT = 5013
+TCP_PORT = 5014
 BUFFER_SIZE = 1024
 
 # Initialize start position variables
@@ -665,7 +666,7 @@ def main():
 
     # Set Start, Goal x, y, theta
     s = [x_start, y_start, yaw_start]
-    g = [220, 130, np.deg2rad(-89)]
+    g = [287, 73, np.deg2rad(90)]
     # s = [10, 35, np.deg2rad(0)]
     # g = [22, 28, np.deg2rad(0)]
 

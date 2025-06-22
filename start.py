@@ -6,7 +6,8 @@ import socket
 import time
 import math
 TCP_IP = "127.0.0.1"
-TCP_PORT = 5013
+TCP_PORT = 5014
+videopath = '/Users/laptopjp/Desktop/SourceDATn/birdseye_view_only.mp4'
 REFERENCE_POINTS = {
     2: (-2.2, 1.3),
     3: (2.2, 1.3),
@@ -68,11 +69,12 @@ def detect_and_send_start_position():
                     mid_y = (top_left[1] + top_right[1]) / 2
                     car_dir = np.array([mid_x - tag_x, mid_y - tag_y])
                     ref_dir = np.array(REFERENCE_POINTS[2]) - np.array(REFERENCE_POINTS[3])
-                    yaw = np.rad2deg(np.arctan2(
+                    yaw = np.arctan2(
                         car_dir[1] * ref_dir[0] - car_dir[0] * ref_dir[1],
                         car_dir[0] * ref_dir[0] + car_dir[1] * ref_dir[1]
-                    ))
-                    yaw = math.radians(yaw)
+                    )
+                    # yaw = -math.radians(yaw)
+                    yaw = -yaw
                     x_map = (2.2 - car_x) * (440 / 4.4)
                     y_map = (1.3 - car_y) * (260 / 2.6)
                     message = f"START,{x_map:.2f},{y_map:.2f},{yaw:.2f}\n"
